@@ -12,7 +12,7 @@ import os
 
 BASE_URL = "https://beta.elevenlabs.io"
 SIGNUP_URL = "https://beta.elevenlabs.io/sign-up"
-MAIL_DOMAIN = "vjuum.com"
+MAIL_DOMAIN = "txcct.com"
 
 def _generate_email():
     """
