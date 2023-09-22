@@ -15,35 +15,27 @@ SIGNUP_URL = "https://beta.elevenlabs.io/sign-up"
 MAIL_DOMAIN = "txcct.com"
 
 def _generate_email():
-    """
-    Generate a random email address using names library
-    """
     first_name = names.get_first_name()
     last_name = names.get_last_name()
-    if randint(0, 1) == 0:
+    mode = randint(0, 2)
+    if mode == 0:
         return f'{first_name}.{last_name}{randint(0, 99)}@{MAIL_DOMAIN}'.lower()
-    return f'{first_name}{randint(0, 99)}@{MAIL_DOMAIN}'.lower()
+    elif mode == 1:
+        return f'{first_name}.{last_name.lower()}@{MAIL_DOMAIN}'
+    else:
+        return f'{first_name}{randint(0, 99)}@{MAIL_DOMAIN}'.lower()
 
 def _generate_password():
-    """
-    Generate a random password
-    """
     password = ""
     for i in range(0, 12):
         password += chr(randint(97, 122))
     return password
 
 def _get_confirmation_link(mail: str):
-    """
-    Use 1secmail API to get the 11labs confirmation link from the email
-    @FIX : if the email has already been used, previous random emails could be used.
-    """
-
-    # Get the latest email id
     mail_user = mail.split('@')[0]
     http_get_url = "https://www.1secmail.com/api/v1/?action=getMessages&login=" + \
         mail_user+"&domain="+MAIL_DOMAIN
-    
+
     latest_mail_id = None
     t0 = monotonic()
     while not latest_mail_id:
@@ -55,21 +47,15 @@ def _get_confirmation_link(mail: str):
             if monotonic() - t0 > 60:
                 raise Exception("Email not received in time")
 
-    # Get the email content
     http_get_url_single = "https://www.1secmail.com/api/v1/?action=readMessage&login=" + \
         mail_user+"&domain="+MAIL_DOMAIN+"&id="+str(latest_mail_id)
     mail_content = requests.get(http_get_url_single).json()['textBody']
-    
-    # Parse the email content to get the confirmation link
-    url_extract_pattern = "https?:\\/\\/beta[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)"
-    urls = re.findall(url_extract_pattern, mail_content)
-    if len(urls) > 1:
-        raise Exception("Multiple confirmation links found")
-    elif len(urls) == 1:
-        return urls[0]
-        
-    raise Exception("Confirmation link not found")
 
+    for line in mail_content.split('\n'):
+        if line.startswith("https://"):
+            return line
+
+    raise Exception("Confirmation link not found")
 def create_account():
     """
     Create an account on Elevenlabs and return the email, password and api key
@@ -101,7 +87,7 @@ def create_account():
     sleep(0.5)
     submit_button =  driver.find_element(By.XPATH, "//button[@type='submit']")
     submit_button.click()
-
+    print(email)
     link = _get_confirmation_link(email)
     
     driver.get(link)
